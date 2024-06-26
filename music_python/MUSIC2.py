@@ -251,7 +251,7 @@ if __name__=="__main__":
     music = MUSICEst(antennaPos, angleStepsNum, searchInterval)
     
     # source data path
-    folder = "data/150r1_F"
+    folder = "data/240604/103.5"
     data1, sr = librosa.load(folder + "/" + "hal_in_pure_24_4ch_48k_1.wav", sr=None)
     data2, sr = librosa.load(folder + "/" + "hal_in_pure_24_4ch_48k_2.wav", sr=None)
   
@@ -273,4 +273,3 @@ if __name__=="__main__":
     print(f"Azimuth: {max_doa:.4f}")
     plt.plot(np.linspace(-90, 90, len(mergedSpectrums)), mergedSpectrums)
     plt.show()
-    
