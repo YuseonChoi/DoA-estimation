@@ -89,7 +89,8 @@ class MUSICEst:
             steeringVec = self.getSteeringVector(angleSteps[i], frequency)
             # Because of precision errors, the score is sometimes complex, but the imaginary part
             # is pretty small (1e-20 or less), so just use real part
-            spectrum[i] = 1 / (steeringVec.conjugate().transpose() * noiseMat * noiseMat.conjugate().transpose() * steeringVec).real
+            spectrum_val = 1 / (steeringVec.conjugate().transpose() * noiseMat * noiseMat.conjugate().transpose() * steeringVec).real
+            spectrum[i] = np.clip(spectrum_val, 1e-10, 1e10)  # Clip values to avoid overflow
 
         return spectrum, angleSteps
 
@@ -251,7 +252,7 @@ if __name__=="__main__":
     music = MUSICEst(antennaPos, angleStepsNum, searchInterval)
     
     # source data path
-    folder = "data/240604/103.5"
+    folder = "data/240625/low/mono_minmax_no_silence"
     data1, sr = librosa.load(folder + "/" + "hal_in_pure_24_4ch_48k_1.wav", sr=None)
     data2, sr = librosa.load(folder + "/" + "hal_in_pure_24_4ch_48k_2.wav", sr=None)
   
