@@ -1,13 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Apr 26 13:13:40 2018
-
-@author: Juho Laukkanen,student number: 218886
-"""
 
 import os
 import numpy as np
-from scipy.signal import fftconvolve
+from scipy.signal import stft
 import scipy.io.wavfile as wav
 import matplotlib.pyplot as plt
 import pyroomacoustics as pra
@@ -31,7 +26,7 @@ def prune(x,y):
         
     return x,y
 
-def srp_phat(s,fs,nFFT=None,center=None,d=None,azimuth_estm=None,mode=None):
+def srp_phat(s,fs,nFFT,center,d,azimuth_estm,mode):
     '''
     Applies Steered Power Response with phase transform algorithm
     Uses pyroomacoustics module
@@ -60,17 +55,18 @@ def srp_phat(s,fs,nFFT=None,center=None,d=None,azimuth_estm=None,mode=None):
         mode = linear 
         mode = circular
     '''    
-    if nFFT is None:
-        nFFT = 1024
-    if center is None:
-        center = [0,0]
-    if d is None:
-        d = 0.1
-    if azimuth_estm is None:
-        azimuth_estm = [60,120]
-        
-    freq_bins = np.arange(30,330) #list of individual frequency bins used to run DoA
-    M = s.shape[0] #number of microphones
+    # if nFFT is None:
+    #     nFFT = 1024
+    # if center is None:
+    #     center = [0,0]
+    # if d is None:
+    #     d = 0.1
+    # if azimuth_estm is None:
+    #     azimuth_estm = [60,120]
+
+    
+    freq_bins = np.arange(30,330) #48khz를 기준으로 1/3 16khz니까 이정도만 봐도 중요한 정보 캐치 가능 
+    M = s.shape[0] #number of microphones, s.shape: (2, 364800)
     phi = 0 #assume angle between microphones is 0 (same y-axis)
     radius = d*M/(2*np.pi) #define radius for circular microphone layout
     c = 343.2 #speed of sound
@@ -84,15 +80,12 @@ def srp_phat(s,fs,nFFT=None,center=None,d=None,azimuth_estm=None,mode=None):
     nSrc = len(azimuth_estm) #number of speakers
 
     #STFT
-    # s_FFT = np.array([np.transpose(pra.transform.stft.STFT(nFFT,nFFT//2,transform='numpy')) for s_ch in s])
-    s_FFT = np.array([np.fft.rfft(s_ch,n=nFFT).T for s_ch in s])
+    _, _, s_FFT = stft(s,window='hann',nperseg=nFFT,fs=fs)
+    print(s_FFT.shape)
     # s_FFT = np.array([pra.transform.stft.STFT(s_ch,nFFT,nFFT//2,transform=np.fft.rfft).T for s_ch in s]) #STFT for s1 and s2
 
     #SRP
-    doa = pra.doa.srp.SRP(L,fs,nFFT,c,max_four=4,num_src=nSrc) #perform SRP approximation
-
-    s_FFT = np.expand_dims(s_FFT,axis=-1)
-    print(s_FFT.shape)
+    doa = pra.doa.srp.SRP(L,fs,nFFT,c,num_src=nSrc) #perform SRP approximation, doa 객체 생성
     #Apply SRP-PHAT
     doa.locate_sources(s_FFT,freq_bins=freq_bins)
     
@@ -195,7 +188,7 @@ def main():
     
     center = [0,0]
     d = 0.161 #distance between microphones (in meters)
-    azimuth_estm = [30,60] #[60,120,240,320] #A subjective guess where the speaker could be
+    azimuth_estm = [45,135,200,300] #[60,120,240,320] #A subjective guess where the speaker could be
     mode = 'linear' #define microphone layout (circular or linear)
     nfft = 1024 #size of fft used
     
@@ -204,7 +197,6 @@ def main():
     threshold = 0.9 #threshold of detection (ratio of speech-max energy of a frame)
     detected_windows = detect(s,fs,0.9)
 
-    print(detected_windows)
     return detected_windows
 
 #IMPLEMENTATION OF ONLY VOICED FRAMES FOR SRP IS MISSING
